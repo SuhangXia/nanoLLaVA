@@ -1,0 +1,30 @@
+# VTLA (Vision-Tactile-Language-Action) Requirements
+# Install with: pip install -r requirements_vtla.txt
+
+# Core dependencies
+numpy>=1.20.0
+scipy>=1.7.0
+torch>=2.0.0
+transformers>=4.30.0
+pillow>=9.0.0
+tqdm>=4.60.0
+
+# HDF5 data format
+h5py>=3.7.0
+
+# RLBench (Simulation)
+# Note: Install manually after setting up CoppeliaSim
+# git+https://github.com/stepjam/PyRep.git
+# git+https://github.com/stepjam/RLBench.git
+
+# Training utilities
+bitsandbytes>=0.40.0  # For 4-bit quantization (optional)
+peft>=0.4.0  # For LoRA/QLoRA (optional)
+
+# Visualization
+matplotlib>=3.5.0
+opencv-python>=4.5.0  # For image processing
+
+# Optional: Video recording
+imageio>=2.9.0
+imageio-ffmpeg>=0.4.0

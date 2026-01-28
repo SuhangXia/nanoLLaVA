@@ -1,11 +1,31 @@
 from abc import ABC, abstractmethod
 
 import torch
+import torch.nn as nn
 
 from .multimodal_encoder.builder import build_vision_tower
 from .multimodal_projector.builder import build_vision_projector
 
 from bunny.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX
+
+
+class ActionHead(nn.Module):
+    """
+    3-layer MLP that maps hidden state to 7D action (dx, dy, dz, dr, dp, dyaw, gripper).
+    """
+
+    def __init__(self, hidden_size: int, action_dim: int = 7, intermediate_size: int = 512):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, action_dim),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.mlp(x)
 
 
 class BunnyMetaModel:
@@ -72,7 +92,7 @@ class BunnyMetaForCausalLM(ABC):
         return image_features
 
     def prepare_inputs_labels_for_multimodal(
-            self, input_ids, position_ids, attention_mask, past_key_values, labels, images
+            self, input_ids, position_ids, attention_mask, past_key_values, labels, images, tactile_images=None
     ):
         vision_tower = self.get_vision_tower()
         if vision_tower is None or images is None or input_ids.shape[1] == 1:
@@ -95,6 +115,16 @@ class BunnyMetaForCausalLM(ABC):
             image_features = [x.flatten(0, 1).to(self.device) for x in image_features]
         else:
             image_features = self.encode_images(images).to(self.device)
+        
+        # Encode tactile (if available)
+        tactile_features = None
+        if tactile_images is not None and hasattr(self.get_model(), 'tactile_tower'):
+            tactile_tower = self.get_model().tactile_tower
+            if tactile_tower is not None:
+                # Encode: (B, 3, 128, 128) -> (B, 1, hidden_size)
+                tactile_embeds = tactile_tower(tactile_images)  # (B, hidden_size)
+                tactile_pos = self.get_model().tactile_pos_embedding  # (1, 1, hidden_size)
+                tactile_features = tactile_embeds.unsqueeze(1) + tactile_pos  # (B, 1, hidden_size)
 
         # Let's just add dummy tensors if they do not exist,
         # it is a headache to deal with None all the time.
@@ -155,6 +185,14 @@ class BunnyMetaForCausalLM(ABC):
                     cur_new_labels.append(
                         torch.full((cur_image_features.shape[0],), IGNORE_INDEX, device=cur_labels.device,
                                    dtype=cur_labels.dtype))
+                    
+                    # Add tactile features after vision (following TLA.pdf)
+                    if tactile_features is not None:
+                        cur_tactile_features = tactile_features[batch_idx:batch_idx+1].squeeze(0)  # (1, hidden)
+                        cur_new_input_embeds.append(cur_tactile_features)
+                        cur_new_labels.append(
+                            torch.full((cur_tactile_features.shape[0],), IGNORE_INDEX, device=cur_labels.device,
+                                       dtype=cur_labels.dtype))
 
             cur_new_input_embeds = torch.cat(cur_new_input_embeds)
             cur_new_labels = torch.cat(cur_new_labels)

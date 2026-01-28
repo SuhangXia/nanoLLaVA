@@ -1,4 +1,7 @@
+apex
 bunny
-checkpoints-pretrain
+data
 eval
+outputs
+papers
 script

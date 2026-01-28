@@ -670,7 +670,12 @@ class Qwen2SdpaAttention(Qwen2Attention):
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
-            kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            if hasattr(past_key_value, 'get_usable_length'):
+                kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
+            elif hasattr(past_key_value, 'get_seq_length'):
+                kv_seq_len += past_key_value.get_seq_length(self.layer_idx)
+            else:
+                kv_seq_len += past_key_value[0].shape[-2] if isinstance(past_key_value, tuple) else 0
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
 
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
@@ -986,9 +991,26 @@ class Qwen2Model(Qwen2PreTrainedModel):
 
         if use_cache:
             use_legacy_cache = not isinstance(past_key_values, Cache)
-            if use_legacy_cache:
-                past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-            past_key_values_length = past_key_values.get_usable_length(seq_length)
+            if use_legacy_cache and past_key_values is not None:
+                # Check if from_legacy_cache method exists (compatibility fix)
+                if hasattr(DynamicCache, 'from_legacy_cache'):
+                    past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+                else:
+                    # Use DynamicCache() directly for older transformers versions
+                    past_key_values = DynamicCache()
+            elif past_key_values is None and use_cache:
+                past_key_values = DynamicCache()
+            
+            # Compatibility: get_usable_length vs get_seq_length
+            if past_key_values is not None:
+                if hasattr(past_key_values, 'get_usable_length'):
+                    past_key_values_length = past_key_values.get_usable_length(seq_length)
+                elif hasattr(past_key_values, 'get_seq_length'):
+                    past_key_values_length = past_key_values.get_seq_length()
+                else:
+                    past_key_values_length = 0
+            else:
+                past_key_values_length = 0
 
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
@@ -1080,7 +1102,17 @@ class Qwen2Model(Qwen2PreTrainedModel):
 
         next_cache = None
         if use_cache:
-            next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
+            if next_decoder_cache is not None:
+                if use_legacy_cache:
+                    # Compatibility: to_legacy_cache may not exist in older versions
+                    if hasattr(next_decoder_cache, 'to_legacy_cache'):
+                        next_cache = next_decoder_cache.to_legacy_cache()
+                    else:
+                        next_cache = next_decoder_cache
+                else:
+                    next_cache = next_decoder_cache
+            else:
+                next_cache = None
 
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)

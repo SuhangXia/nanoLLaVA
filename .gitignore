@@ -1,0 +1,127 @@
+# Nano-VTLA .gitignore
+
+# ========================================
+# Python
+# ========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ========================================
+# Training Outputs (Large Files)
+# ========================================
+outputs/
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+checkpoints/
+
+# Action statistics (small, but optional)
+*action_mean_std.pkl
+*action_stats.pkl
+
+# TensorBoard logs
+tensorboard/
+events.out.tfevents.*
+
+# Training logs
+*.log
+debug.log
+train_loss.jsonl
+
+# ========================================
+# Data (Do NOT commit large datasets)
+# ========================================
+data/
+datasets/
+*.hdf5
+*.h5
+*.zarr
+*.npy
+*.npz
+.zgroup
+.zarray
+
+# ========================================
+# Visualizations & Results
+# ========================================
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.avi
+!icon.png
+!comparison.png
+# Keep example images in serve/examples
+!bunny/serve/examples/*.png
+!bunny/serve/examples/*.jpg
+
+# ========================================
+# Environment & Dependencies
+# ========================================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ========================================
+# IDE & Editor
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ========================================
+# Docker
+# ========================================
+.dockerignore
+
+# ========================================
+# System
+# ========================================
+.cache/
+*.cache
+.cursor/
+.git/
+
+# ========================================
+# Jupyter
+# ========================================
+.ipynb_checkpoints
+*.ipynb
+
+# ========================================
+# Temporary & Misc
+# ========================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig

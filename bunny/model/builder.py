@@ -133,7 +133,8 @@ def load_pretrained_model(model_path, model_base, model_name, model_type, load_8
     else:
         context_len = 2048
 
-    if model.generation_config.pad_token_id is None:
-        model.generation_config.pad_token_id = model.generation_config.eos_token_id
+    if hasattr(model, 'generation_config') and model.generation_config is not None:
+        if model.generation_config.pad_token_id is None:
+            model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
     return tokenizer, model, image_processor, context_len

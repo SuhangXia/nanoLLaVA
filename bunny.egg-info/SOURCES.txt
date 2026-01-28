@@ -8,6 +8,8 @@ bunny.egg-info/SOURCES.txt
 bunny.egg-info/dependency_links.txt
 bunny.egg-info/requires.txt
 bunny.egg-info/top_level.txt
+bunny/data/vitamin_b_dataset.py
+bunny/data/vitamin_b_zarr_dataset.py
 bunny/eval/m4c_evaluator.py
 bunny/eval/model_vqa.py
 bunny/eval/model_vqa_loader.py
@@ -17,6 +19,9 @@ bunny/eval/model_vqa_science.py
 bunny/model/__init__.py
 bunny/model/builder.py
 bunny/model/bunny_arch.py
+bunny/model/simplified_vtla.py
+bunny/model/tactile_encoder.py
+bunny/model/vtla_arch.py
 bunny/model/language_model/bunny_phi.py
 bunny/model/language_model/bunny_qwen.py
 bunny/model/language_model/bunny_stablelm.py
